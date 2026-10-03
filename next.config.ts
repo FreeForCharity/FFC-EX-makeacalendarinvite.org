@@ -9,25 +9,9 @@ const nextConfig: NextConfig = {
   images: {
     // This allows all images, local or external, to load without optimization
     unoptimized: true,
-    // Use remotePatterns instead of deprecated domains
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'ffcworkingsite1.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'staging.freeforcharity.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'freeforcharity.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'static.vecteezy.com',
-      },
-    ],
+    // Every image the site renders is localized under public/; no remote
+    // image hosts are allowed.
+    remotePatterns: [],
   },
   // Optional: base path and asset prefix if using a subdirectory deployment
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',

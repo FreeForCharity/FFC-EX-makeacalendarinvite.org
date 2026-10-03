@@ -49,3 +49,6 @@ jobs:
       # canonical values here). Forks can gate with `--strict` in their own CI.
       - name: Rebrand checklist (report only)
         run: pnpm run check:rebrand
+
+      - name: Captured fragments carry no dead CMS chrome
+        run: node scripts/migration/postprocess-clone-content.mjs --check

@@ -308,6 +308,9 @@ jobs:
           EOF
           grep -nE 'clone-enhance|ffc-footer|CloneEnhance' site/src/app/layout.tsx
 
+      - name: Strip CMS chrome that has no backend (search UI)
+        run: node site/scripts/migration/postprocess-clone-content.mjs
+
       - name: Repair references the conversion left pointing at nothing
         shell: bash
         run: |

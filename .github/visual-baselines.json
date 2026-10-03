@@ -1,0 +1,4 @@
+{
+  "refresh": 1,
+  "note": "Bump refresh to regenerate tests/visual.spec.ts-snapshots on the CI renderer (see .github/workflows/visual-baselines.yml)."
+}

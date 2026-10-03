@@ -57,6 +57,11 @@ export default defineConfig({
     'google-tag-manager.spec.ts',
     'security-metadata.spec.ts',
     'policy-pages.spec.ts',
+    'site-pages.spec.ts',
+    'navigation.spec.ts',
+    'accessibility.spec.ts',
+    'not-found.spec.ts',
+    'visual.spec.ts',
   ],
   // Run tests in parallel for better performance
   fullyParallel: true,
@@ -91,7 +96,14 @@ export default defineConfig({
     },
     {
       name: 'mobile-chrome',
-      testMatch: ['footer-only.spec.ts', 'copyright.spec.ts', 'policy-pages.spec.ts'],
+      testMatch: [
+        'footer-only.spec.ts',
+        'copyright.spec.ts',
+        'policy-pages.spec.ts',
+        'site-pages.spec.ts',
+        'navigation.spec.ts',
+        'visual.spec.ts',
+      ],
       use: {
         ...devices['Pixel 5'],
         launchOptions: {

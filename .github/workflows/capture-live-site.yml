@@ -164,6 +164,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Patch the capture script for plain permalinks (?page_id=N)
+        run: node site/scripts/migration/patch-capture-plain-permalinks.mjs automation/scripts/capture-wordpress-api.mjs
+
       - name: Offline self-tests of the capture logic
         working-directory: automation
         run: |

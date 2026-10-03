@@ -1,8 +1,8 @@
 {
-  "mode": "probe",
+  "mode": "capture",
   "domain": "makeacalendarinvite.org",
   "contact_email": "contact@makeacalendarinvite.org",
   "ignore_hosts": "secure.gravatar.com",
   "automation_ref": "main",
-  "run": 1
+  "run": 2
 }

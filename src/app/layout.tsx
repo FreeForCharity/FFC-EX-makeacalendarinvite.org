@@ -1,5 +1,6 @@
 import './globals.css'
-import Footer from './../components/footer'
+import Footer from './../components/ffc-footer'
+import CloneEnhance from './../components/clone-enhance'
 import CookieConsent from './../components/cookie-consent'
 import GoogleTagManager, { GoogleTagManagerNoScript } from './../components/google-tag-manager'
 import { siteConfig } from '@/lib/site.config'
@@ -91,6 +92,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         {/* <PopupProvider> */}
+        <CloneEnhance />
         {children}
         <Footer />
         <CookieConsent />

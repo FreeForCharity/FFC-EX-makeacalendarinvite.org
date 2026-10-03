@@ -95,9 +95,7 @@
   },
   "remainingExternalHosts": [],
   "escapedPaths": [],
-  "ignoreHosts": [
-    "secure.gravatar.com"
-  ],
+  "ignoreHosts": ["secure.gravatar.com"],
   "forms": {
     "pageCount": 7,
     "pages": [
@@ -138,10 +136,7 @@
       }
     ],
     "truncated": 0,
-    "contactEmailsFound": [
-      "contact@makeacalendarinvite.org",
-      "info@makeacalendarinvite.com"
-    ]
+    "contactEmailsFound": ["contact@makeacalendarinvite.org", "info@makeacalendarinvite.com"]
   },
   "entries": [
     {

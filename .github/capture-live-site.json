@@ -1,5 +1,5 @@
 {
-  "mode": "capture",
+  "mode": "probe",
   "domain": "makeacalendarinvite.org",
   "contact_email": "contact@makeacalendarinvite.org",
   "ignore_hosts": "secure.gravatar.com",

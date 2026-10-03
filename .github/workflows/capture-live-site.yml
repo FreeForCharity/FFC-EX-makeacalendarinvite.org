@@ -1,5 +1,5 @@
 name: Capture live site (WordPress -> static routes)
-run-name: 'Capture ${{ inputs.domain }} (mode=${{ inputs.mode }})'
+run-name: 'Capture live site (${{ github.event_name }})'
 
 # Captures the live WordPress site into THIS repo as static Next.js routes,
 # using the FFC-Cloudflare-Automation capture/convert scripts, and commits the
@@ -16,52 +16,95 @@ run-name: 'Capture ${{ inputs.domain }} (mode=${{ inputs.mode }})'
 # (links, slugs, statuses). `capture` runs the full pipeline and pushes.
 
 on:
+  # A workflow on a non-default branch cannot be dispatched until it also
+  # exists on the default branch, so the branch runs it from a committed
+  # config file instead: edit .github/capture-live-site.json and push.
+  push:
+    paths:
+      - '.github/capture-live-site.json'
   workflow_dispatch:
     inputs:
       domain:
         description: 'Live apex domain that serves the content (bare hostname).'
-        required: true
-        default: 'makeacalendarinvite.org'
+        required: false
+        default: ''
         type: string
       mode:
-        description: 'probe = print the REST inventory only. capture = capture, convert, commit, push.'
-        required: true
-        default: 'probe'
-        type: choice
-        options: [probe, capture]
+        description: 'probe = print the REST inventory only. capture = capture, convert, commit, push. Empty = read .github/capture-live-site.json.'
+        required: false
+        default: ''
+        type: string
       contact_email:
         description: 'Address that replaces message forms (a static site has no form backend).'
         required: false
-        default: 'contact@makeacalendarinvite.org'
+        default: ''
         type: string
       ignore_hosts:
         description: 'Comma-separated hostnames whose references are left alone (not fetched).'
         required: false
-        default: 'secure.gravatar.com'
+        default: ''
         type: string
       automation_ref:
         description: 'Ref of FreeForCharity/FFC-Cloudflare-Automation to take the scripts from.'
         required: false
-        default: 'main'
+        default: ''
         type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: capture-${{ inputs.domain }}
+  group: capture-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  resolve:
+    name: Resolve settings (dispatch inputs override the committed config)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.r.outputs.mode }}
+      domain: ${{ steps.r.outputs.domain }}
+      contact_email: ${{ steps.r.outputs.contact_email }}
+      ignore_hosts: ${{ steps.r.outputs.ignore_hosts }}
+      automation_ref: ${{ steps.r.outputs.automation_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: r
+        env:
+          IN_MODE: ${{ inputs.mode }}
+          IN_DOMAIN: ${{ needs.resolve.outputs.domain }}
+          IN_EMAIL: ${{ needs.resolve.outputs.contact_email }}
+          IN_IGNORE: ${{ inputs.ignore_hosts }}
+          IN_REF: ${{ inputs.automation_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cfg=.github/capture-live-site.json
+          get() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get(sys.argv[2], ""))' "$cfg" "$1"; }
+          mode="${IN_MODE:-$(get mode)}"
+          domain="${IN_DOMAIN:-$(get domain)}"
+          email="${IN_EMAIL:-$(get contact_email)}"
+          ignore="${IN_IGNORE:-$(get ignore_hosts)}"
+          ref="${IN_REF:-$(get automation_ref)}"
+          case "$mode" in probe|capture) ;; *) echo "::error::mode must be probe or capture (got '$mode')"; exit 1;; esac
+          case "$domain" in *.*) ;; *) echo "::error::domain '$domain' is not a bare hostname"; exit 1;; esac
+          {
+            echo "mode=$mode"; echo "domain=$domain"; echo "contact_email=$email"
+            echo "ignore_hosts=$ignore"; echo "automation_ref=${ref:-main}"
+          } >> "$GITHUB_OUTPUT"
+          echo "mode=$mode domain=$domain contact_email=$email ignore_hosts=$ignore automation_ref=${ref:-main}"
+
   probe:
     name: Probe the CMS inventory
-    if: inputs.mode == 'probe'
+    needs: resolve
+    if: needs.resolve.outputs.mode == 'probe'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: List pages, posts and permalink shape
         env:
-          DOMAIN: ${{ inputs.domain }}
+          DOMAIN: ${{ needs.resolve.outputs.domain }}
         shell: bash
         run: |
           set -uo pipefail
@@ -98,7 +141,8 @@ jobs:
 
   capture:
     name: Capture, convert and commit
-    if: inputs.mode == 'capture'
+    needs: resolve
+    if: needs.resolve.outputs.mode == 'capture'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -112,7 +156,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FreeForCharity/FFC-Cloudflare-Automation
-          ref: ${{ inputs.automation_ref }}
+          ref: ${{ needs.resolve.outputs.automation_ref }}
           path: automation
 
       - name: Setup Node.js
@@ -133,8 +177,8 @@ jobs:
       - name: Capture the live WordPress site
         working-directory: automation
         env:
-          DOMAIN: ${{ inputs.domain }}
-          IGNORE_HOSTS: ${{ inputs.ignore_hosts }}
+          DOMAIN: ${{ needs.resolve.outputs.domain }}
+          IGNORE_HOSTS: ${{ needs.resolve.outputs.ignore_hosts }}
         shell: bash
         run: |
           set -uo pipefail
@@ -169,8 +213,8 @@ jobs:
       - name: 'Replace forms with a mailto: block'
         working-directory: automation
         env:
-          EMAIL: ${{ inputs.contact_email }}
-          DOMAIN: ${{ inputs.domain }}
+          EMAIL: ${{ needs.resolve.outputs.contact_email }}
+          DOMAIN: ${{ needs.resolve.outputs.domain }}
         shell: bash
         run: |
           set -euo pipefail
@@ -194,7 +238,7 @@ jobs:
 
       - name: Integrate the capture into the Next.js app
         env:
-          DOMAIN: ${{ inputs.domain }}
+          DOMAIN: ${{ needs.resolve.outputs.domain }}
         shell: bash
         run: |
           set -euo pipefail
@@ -208,7 +252,7 @@ jobs:
 
       - name: Convert the capture into real app routes
         env:
-          DOMAIN: ${{ inputs.domain }}
+          DOMAIN: ${{ needs.resolve.outputs.domain }}
         shell: bash
         run: |
           set -uo pipefail
@@ -283,8 +327,8 @@ jobs:
       - name: Commit and push to the dispatched branch
         working-directory: site
         env:
-          DOMAIN: ${{ inputs.domain }}
-          EMAIL: ${{ inputs.contact_email }}
+          DOMAIN: ${{ needs.resolve.outputs.domain }}
+          EMAIL: ${{ needs.resolve.outputs.contact_email }}
           BRANCH: ${{ github.ref_name }}
         shell: bash
         run: |

@@ -1,0 +1,53 @@
+--- conversion ---------------------------------------------
+site                  makeacalendarinvite.org
+routes written        8
+brand suffix in captured titles  Make A Calendar Invite  ->  KEPT, and the layout template suppressed with title.absolute (siteConfig.name is "Free For Charity", which is not this site's brand)
+slug collisions       0
+duplicate URLs collapsed  0
+pages whose h1 count was wrong  3
+headings retagged     57
+descriptions derived  0
+pages still without a description  1
+alt attributes added  0
+links given a name    5
+"Read More" links given a destination  0
+embeds given a title  0
+external frame hosts (must be in the CSP frame-src)  0
+scripts removed from fragments  8
+share links repointed          0
+malformed hrefs repaired       0
+double-encoded text repaired  0
+dead share controls removed    0
+widget titles demoted to h2    0
+dead nameless controls removed 0
+captured page footers demoted to <div>  7  (nested, left as footers: 2)
+dead consent banners removed  0  (0.0 MB)
+head elements dropped (owned by Next)  57
+inline <style> blocks scoped  55
+stylesheet links dropped (file never captured)  0
+asset refs tokenized  652
+page links tokenized  34
+references repointed at the captured file  0
+links to pages the capture does not have, unlinked  9
+      7  100cc98345af0c44
+      1  hello-world/&
+      1  wp-admin
+stylesheets rewritten 18  (heading twins 1054, scoped 4902)
+HTML left in public/  0
+FFC template routes restored  7
+trailingSlash  already set
+Lighthouse URLs retargeted:
+  http://localhost/index.html
+  http://localhost/hello-world/index.html
+  http://localhost/contact/index.html
+  http://localhost/cookie-policy/
+  http://localhost/privacy-policy/
+  http://localhost/terms-of-service/
+layout.tsx wiring  edited
+  footer repointed
+  WARNING: no `import Header from .../header` to anchor the import to
+  WARNING: no `<Header />` to render `<CloneEnhance />` beside
+could not wire 2 generated component(s) into src/app/layout.tsx:
+  WARNING: no `import Header from .../header` to anchor the import to
+  WARNING: no `<Header />` to render `<CloneEnhance />` beside
+The component was written to src/components/ and nothing imports it, so it will not run on any page. Wire it by hand in src/app/layout.tsx and re-run, or fix the anchor this step looks for.

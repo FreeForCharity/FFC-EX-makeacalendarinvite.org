@@ -70,13 +70,21 @@ describe('siteConfig contract', () => {
     expect(siteConfig.guidestar.profileUrl).toMatch(/^https:\/\//)
     expect(siteConfig.guidestar.directProfileUrl).toMatch(/^https:\/\//)
 
-    // IRS EIN format: two digits, hyphen, seven digits.
-    expect(siteConfig.ein).toMatch(/^\d{2}-\d{7}$/)
+    // IRS EIN format: two digits, hyphen, seven digits -- OR, for a Level 1
+    // (pre-501c3) site that makes no tax-status claim, the documented
+    // `pending` sentinel, which the footers never render as an EIN.
+    if (siteConfig.taxStatusLabel.trim()) {
+      expect(siteConfig.ein).toMatch(/^\d{2}-\d{7}$/)
+    } else {
+      expect(siteConfig.ein).toMatch(/^(\d{2}-\d{7}|pending)$/)
+    }
 
     expect(typeof siteConfig.phone.display).toBe('string')
     expect(typeof siteConfig.phone.tel).toBe('string')
 
-    expect(siteConfig.addresses.length).toBeGreaterThan(0)
+    // A site may publish no postal address (email-only contact); the footer
+    // then omits the address block. Every address that IS listed must be complete.
+    expect(Array.isArray(siteConfig.addresses)).toBe(true)
     for (const address of siteConfig.addresses) {
       expect(address.label.trim().length).toBeGreaterThan(0)
       expect(address.lines.length).toBeGreaterThan(0)

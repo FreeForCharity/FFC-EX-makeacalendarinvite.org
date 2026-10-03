@@ -1,4 +1,4 @@
-# RFC 9116 security.txt for Free For Charity footer-only template sites.
+# RFC 9116 security.txt for makeacalendarinvite.org.
 # Keep Contact, Policy, Acknowledgments, and Canonical URLs aligned with
 # src/lib/site.config.ts before deploying a child site.
 #
@@ -13,10 +13,10 @@
 # an address no host serves. scripts/check-drift.mjs reads the same signal and
 # fails if these lines and public/CNAME get out of step.
 
-Contact: mailto:clarkemoyer@freeforcharity.org
+Contact: mailto:contact@makeacalendarinvite.org
 Expires: 2027-12-31T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://ffcworkingsite1.org/FFC-IN-Footer_Only_Template/.well-known/security.txt
-Canonical: https://ffcworkingsite1.org/FFC-IN-Footer_Only_Template/security.txt
-Policy: https://ffcworkingsite1.org/FFC-IN-Footer_Only_Template/vulnerability-disclosure-policy
-Acknowledgments: https://ffcworkingsite1.org/FFC-IN-Footer_Only_Template/security-acknowledgements
+Canonical: https://freeforcharity.github.io/FFC-EX-makeacalendarinvite.org/.well-known/security.txt
+Canonical: https://freeforcharity.github.io/FFC-EX-makeacalendarinvite.org/security.txt
+Policy: https://freeforcharity.github.io/FFC-EX-makeacalendarinvite.org/vulnerability-disclosure-policy
+Acknowledgments: https://freeforcharity.github.io/FFC-EX-makeacalendarinvite.org/security-acknowledgements

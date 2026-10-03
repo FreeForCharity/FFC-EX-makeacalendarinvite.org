@@ -153,68 +153,50 @@ export type SiteConfig = {
 }
 
 export const siteConfig: SiteConfig = {
-  name: 'Free For Charity',
-  tagline: 'Reduce Costs, Increase Impact',
+  name: 'Make A Calendar Invite',
+  tagline: 'Just make one!',
   mission:
-    'Free For Charity connects students, professionals, and businesses with nonprofits to reduce costs and increase revenues.',
+    'Make A Calendar Invite explains why calendar invites matter, how to make one, and how to get more people to actually show up.',
   // Empty = the footer's Donate / Volunteer links email contactEmail instead.
   donationUrl: '',
   volunteerUrl: '',
   description:
-    'Free For Charity connects students, professionals, and businesses with nonprofits to reduce costs and increase revenues—putting more resources back into their missions.',
+    'Make A Calendar Invite explains why calendar invites matter, how to make one, and tips for better event attendance.',
   shortDescription:
-    'Connecting students, professionals, and businesses with nonprofits to reduce costs and increase revenues.',
-  url: 'https://ffcworkingsite1.org',
-  twitterHandle: '@freeforcharity',
-  contactEmail: 'clarkemoyer@freeforcharity.org',
-  keywords: [
-    'nonprofit',
-    'charity',
-    'volunteer',
-    'donate',
-    'free hosting',
-    'domains',
-    'Microsoft 365',
-  ],
+    'Why calendar invites matter, how to make one, and tips for better event attendance.',
+  // No public/CNAME yet: this deploy is served at the GitHub Pages project
+  // URL, so the origin is github.io and sitePath() adds /<repo>. The cutover
+  // PR that adds public/CNAME switches this to https://makeacalendarinvite.org.
+  url: 'https://freeforcharity.github.io',
+  twitterHandle: '',
+  contactEmail: 'contact@makeacalendarinvite.org',
+  keywords: ['calendar invite', 'meeting invite', 'ics', 'event attendance'],
   themeColor: '#ffffff',
   vulnerabilityDisclosurePath: '/vulnerability-disclosure-policy',
-  social: [
-    { label: 'Facebook', href: 'https://www.facebook.com/freeforcharity' },
-    { label: 'X (Twitter)', href: 'https://x.com/freeforcharity1' },
-    { label: 'LinkedIn', href: 'https://www.linkedin.com/company/freeforcharity/' },
-    // Repo name uses underscores — the hyphenated variant 404s.
-    { label: 'GitHub', href: 'https://github.com/FreeForCharity/FFC-IN-Footer_Only_Template' },
-  ],
-  ein: '46-2471893',
-  phone: { display: '(520) 222-8104', tel: '5202228104' },
-  addresses: [
-    {
-      label: 'Main Address',
-      lines: ['4030 Wake Forrest Road', 'Suite 349 Raleigh North', 'Carolina 27609'],
-      mapUrl:
-        'https://www.google.com/maps/search/?api=1&query=4030+Wake+Forrest+Road+Suite+349+Raleigh+NC+27609',
-    },
-    {
-      label: 'PA Office Address',
-      lines: ['301 Science Park Road Suite', '119 State College PA 16803'],
-      mapUrl:
-        'https://www.google.com/maps/place/Free+For+Charity/@40.7768455,-77.8963305,17z/data=!3m1!4b1!4m6!3m5!1s0x89cea944b44a2e01:0x6fc2d6bf09e00a0f!8m2!3d40.7768415!4d-77.8937556!16s%2Fg%2F11vzvbl2d7?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D',
-    },
-  ],
-  taxStatusLabel: 'a US 501c3 Non Profit',
+  // The live site publishes no social profiles.
+  social: [],
+  // Level 1 (pre-501c3) site: no EIN has been issued. The shared SiteConfig
+  // schema requires a non-empty string, so this carries a sentinel that is
+  // NOT shaped like an EIN (NN-NNNNNNN); the footers render the EIN line and
+  // the Candid link only for a real EIN.
+  ein: 'pending',
+  // The live site publishes no phone number or postal address — email only.
+  phone: { display: '', tel: '' },
+  addresses: [],
+  // No Candid/GuideStar profile exists for a pre-501c3 organization. Schema
+  // requires non-empty URLs; never rendered while `ein` is not a real EIN.
   guidestar: {
-    profileUrl: 'https://www.guidestar.org/profile/46-2471893',
-    directProfileUrl:
-      'https://www.guidestar.org/profile/shared/bbbe173a-87b9-4af9-a8a2-cae255a95742',
+    profileUrl: 'https://www.guidestar.org/',
+    directProfileUrl: 'https://www.guidestar.org/',
   },
+  // Pre-501c3: no tax-status claim is made anywhere on the site.
+  taxStatusLabel: '',
   supportedBy: {
     name: 'Free For Charity',
     url: 'https://freeforcharity.org',
     hubUrl: 'https://freeforcharity.org/hub/',
   },
-  // parentOrg is intentionally unset: this template is for standalone
-  // charities by default. Set it only for a genuine "a project of"
-  // fiscal-sponsorship relationship.
+  // parentOrg is intentionally unset: this is a standalone site.
 }
 
 function configuredBasePath(): string {

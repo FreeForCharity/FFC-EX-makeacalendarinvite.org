@@ -2,7 +2,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 jest.mock(
-  '../../src/components/footer',
+  '../../src/components/ffc-footer',
   () =>
     function MockFooter() {
       return <footer>Footer</footer>

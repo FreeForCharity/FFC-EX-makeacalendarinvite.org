@@ -14,6 +14,14 @@ import { testConfig } from './test.config'
  * after the browser's onload event. Tests must wait for the script to appear.
  */
 
+// Every new FFC site starts with no container (GTM_ID = ''); the GTM
+// components then render nothing, so there is no script to assert on until
+// workflows 505/503 have provisioned one and its id is wired in.
+test.skip(
+  !testConfig.googleTagManager.configured,
+  'No GTM container is configured for this site yet (src/lib/analytics.config.ts).'
+)
+
 /** Helper: wait for the GTM script element to be injected by Next.js */
 async function waitForGtmScript(page: import('@playwright/test').Page) {
   await page.waitForFunction(() => document.querySelector('script[id="gtm-script"]') !== null, {

@@ -201,3 +201,178 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* --- FFC attribution footer (added by workflow 706) ----------------------
+   Written below the cloned page chrome, so it must not inherit the clone's
+   theme variables. Colors are stated outright and meet WCAG AA against the
+   stated background (#f5f5f5 / #1a1a1a: 15.9:1; link #1a4f8b on #f5f5f5:
+   7.3:1). */
+.ffc-footer {
+  background: #f5f5f5;
+  border-top: 1px solid #d8d8d8;
+  color: #1a1a1a;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  padding: 2rem 1rem;
+}
+.ffc-footer__inner {
+  margin: 0 auto;
+  max-width: 68rem;
+  text-align: center;
+}
+.ffc-footer p {
+  margin: 0 0 0.75rem;
+}
+.ffc-footer a {
+  color: #1a4f8b;
+  text-decoration: underline;
+}
+.ffc-footer a:hover,
+.ffc-footer a:focus-visible {
+  color: #10305a;
+}
+.ffc-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  justify-content: center;
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+.ffc-footer__identity {
+  font-weight: 600;
+}
+.ffc-footer__legal {
+  color: #3d3d3d;
+  font-size: 0.85rem;
+}
+/* The independence statement, set to match the legal line above it: same muted
+   grey and same size, because they are the same kind of small print and a
+   visitor reads them as one block. It carries its own class rather than
+   reusing `__legal` so the two can be styled apart later, and because the
+   markup names it -- a class in the component with no selector here renders as
+   an unstyled paragraph on every FFC-EX site the converter touches, which is
+   what a review of #1373 caught. */
+.ffc-footer__relationship {
+  color: #3d3d3d;
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+}
+
+/* Text that exists for a screen reader and a crawler, not for a sighted
+   reader: the destination appended to a "Read More" link. Clipped rather than
+   `display:none` so it stays in the accessibility tree and in the rendered
+   text — Lighthouse's link-text audit reads the latter, and an aria-label
+   would satisfy neither it nor voice control. */
+.ffc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Captured sidebar widgets: touch-target size (WCAG 2.5.8) -------------
+   WordPress widget lists — the RSS feed titles, category and archive links in
+   Divi's sidebar — render as ~21px-tall inline links, under the 24x24 minimum
+   Lighthouse enforces at error level through the accessibility category. They
+   appear on 569 of this site's 587 pages, and cost it 3 points there; the six
+   pages sampled during development happened to be the sidebar-less ones, so
+   the first CI run on a wider page list was what surfaced it.
+
+   Padding rather than a font change: the links stay exactly the size the
+   charity designed them, and only the clickable box grows. `inline-block` is
+   what lets the vertical padding count toward the box at all. */
+.ffc-clone .et_pb_widget a,
+.ffc-clone .rsswidget {
+  display: inline-block;
+  min-height: 24px;
+  min-width: 24px;
+  padding-block: 2px;
+  text-align: center;
+}
+/* Text links in the widget lists read left-aligned; only the icon-sized
+   targets needed centring, and `min-width` alone would have left the RSS
+   feed icon 14px wide — measured, after the height fix above already passed. */
+.ffc-clone .et_pb_widget li a,
+.ffc-clone .rsswidget.rss-widget-title {
+  text-align: left;
+}
+
+/* --- The captured site gets its own stacking context ----------------------
+   A captured page brings its own z-indexes, chosen by its theme and plugins
+   to beat each OTHER, with no knowledge of the FFC chrome around them.
+   Social Snap's share bar is `position: fixed; z-index: 999`; Astra's
+   `.site-primary-header-wrap` is fixed too. Both outrank FFC's cookie-consent
+   modal (`z-50`) and SWALLOW the click that dismisses it -- measured, as
+   `... subtree intercepts pointer events`, 56 retries, 30s timeout. That
+   banner is a GDPR control, not decoration.
+
+   `isolation: isolate` rather than a list of capped selectors: it makes
+   `.ffc-clone` a stacking context, so every z-index inside the capture is
+   resolved against its siblings INSIDE the capture and none of them can
+   paint above an FFC element outside it. Relative order within the clone is
+   untouched, which is what a per-selector cap could not promise -- and the
+   first version of this rule capped the two ids that had been looked at, was
+   measured to work, and then lost to the sticky header that was next in line.
+
+   `isolation` and not `position: relative; z-index: 0`: relative would make
+   the wrapper a containing block for absolutely-positioned descendants that
+   currently resolve against the page, moving captured layout. `isolation`
+   creates the stacking context and nothing else. It is also not one of the
+   properties that re-anchor `position: fixed`, so the captured sticky header
+   still floats against the viewport -- it simply cannot float above FFC. */
+.ffc-clone {
+  isolation: isolate;
+}
+
+/* WPBakery's "full height row" option is a desktop assumption, and on a phone
+   it hands the visitor a blank screen.
+
+   `vc_row-o-full-height` carries `min-height: 100vh` unconditionally. That is
+   the SOURCE site's own CSS, not a capture artifact -- confirmed with CDP
+   `CSS.getMatchedStylesForNode` against a built export rather than by reading
+   markup. It works on a desktop, where the section's cover image renders
+   1280x400 inside a 915px box and the site navigation sits above it. At 390px
+   the same image drops to its 414x129 srcset variant and the navigation
+   collapses into the hamburger, so a full-height section holds one small image
+   and nothing else.
+
+   Measured on FFC-EX-newheightseducation.org, which is where this was found:
+   the home page's first heading sat at y=1005, a full screen below an 844px
+   fold, while `verify:build`, Lighthouse (accessibility 100, SEO 100) and
+   twelve post-deploy smoke specs were all green. Every one of them measured
+   totals -- the page had 4,806 characters of text and 16 visible images; none
+   of it was on the first screen.
+
+   Capping rather than editing the captured markup: the class comes from the
+   source, so the next capture brings it back. 768px is WPBakery's own
+   breakpoint, where its grid already reflows to a single column.
+
+   The leading `body` is load-bearing, for the same reason the
+   `#glt-translate-trigger` rule above needs it: the capture's `<style>` blocks
+   are inlined into the page fragment, so they land AFTER this file in the
+   cascade and win every tie. Written without it this selector matches the
+   source's at (0,3,0), loses, and changes nothing -- which is exactly what it
+   did on the first attempt, with the above-the-fold measurements coming back
+   byte-identical.
+
+   Same reasoning as the `iframe` max-width rule: the source site has the same
+   markup and the same problem, and reproducing a layout break faithfully is
+   not a goal. */
+@media (max-width: 768px) {
+  body .ffc-clone .vc_section.vc_row-o-full-height,
+  body .ffc-clone .vc_row.vc_row-o-full-height {
+    min-height: 0;
+  }
+}

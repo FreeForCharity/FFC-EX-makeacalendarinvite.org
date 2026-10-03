@@ -42,21 +42,13 @@ const allPages = [
  * "/privacy-policy" and "/privacy-policy/" (local dev with trailingSlash).
  */
 const footerPolicyLinks = [
-  { name: 'Free For Charity Donation Policy', pathSuffix: '/free-for-charity-donation-policy' },
-  // The charity's own donation policy. Matched with exact names below so this
-  // does not also match "Free For Charity Donation Policy".
+  { name: 'Privacy Policy', pathSuffix: '/privacy-policy' },
+  { name: 'Cookie Policy', pathSuffix: '/cookie-policy' },
+  { name: 'Terms of Service', pathSuffix: '/terms-of-service' },
   { name: 'Donation Policy', pathSuffix: '/donation-policy' },
-  { name: `${testConfig.site.name} Privacy Policy`, pathSuffix: '/privacy-policy' },
-  { name: `${testConfig.site.name} Cookie Policy`, pathSuffix: '/cookie-policy' },
-  { name: `${testConfig.site.name} Terms of Service`, pathSuffix: '/terms-of-service' },
-  {
-    name: `${testConfig.site.name} Vulnerability Disclosure Policy`,
-    pathSuffix: '/vulnerability-disclosure-policy',
-  },
-  {
-    name: `${testConfig.site.name} Security Acknowledgement`,
-    pathSuffix: '/security-acknowledgements',
-  },
+  { name: 'FFC Donation Policy', pathSuffix: '/free-for-charity-donation-policy' },
+  { name: 'Vulnerability Disclosure', pathSuffix: '/vulnerability-disclosure-policy' },
+  { name: 'Security Acknowledgements', pathSuffix: '/security-acknowledgements' },
 ]
 
 test.describe('Post-deploy smoke tests', () => {
@@ -73,21 +65,16 @@ test.describe('Post-deploy smoke tests', () => {
     })
   }
 
-  test('footer renders with all sections', async ({ page }) => {
+  test('footer renders the identity, login link and attribution', async ({ page }) => {
     await page.goto('./')
 
-    const footer = page.locator('footer')
+    const footer = page.locator('footer.ffc-footer')
     await expect(footer).toBeVisible()
-
-    // Three column headings
-    await expect(footer.getByRole('heading', { name: 'Endorsements' })).toBeVisible()
-    await expect(footer.getByRole('heading', { name: 'Quick Links' })).toBeVisible()
-    await expect(footer.getByRole('heading', { name: 'Contact Us' })).toBeVisible()
-
-    // Policy section heading
-    await expect(
-      footer.getByRole('heading', { name: `${testConfig.site.name} Policy` })
-    ).toBeVisible()
+    await expect(footer.locator('.ffc-footer__identity')).toContainText(testConfig.site.name)
+    await expect(footer.getByRole('link', { name: 'Supported Charity Login' })).toBeVisible()
+    await expect(footer.locator('.ffc-footer__legal')).toContainText(
+      testConfig.copyright.searchText
+    )
   })
 
   test('footer contains policy links with correct paths', async ({ page }) => {
@@ -95,8 +82,8 @@ test.describe('Post-deploy smoke tests', () => {
     const footer = page.locator('footer')
 
     for (const { name, pathSuffix } of footerPolicyLinks) {
-      // exact: true — "Donation Policy" is a substring of "Free For Charity
-      // Donation Policy", so substring matching would hit both links.
+      // exact: true — "Donation Policy" is a substring of "FFC Donation
+      // Policy", so substring matching would hit both links.
       const link = footer.getByRole('link', { name, exact: true })
       await expect(link, `Policy link "${name}" should be visible`).toBeVisible()
 
@@ -160,6 +147,10 @@ test.describe('Post-deploy smoke tests', () => {
   })
 
   test('GTM loads and dataLayer is available', async ({ page }) => {
+    test.skip(
+      !testConfig.googleTagManager.configured,
+      'No GTM container is configured for this site yet (src/lib/analytics.config.ts).'
+    )
     await page.goto('./')
 
     // Wait for lazy-loaded GTM script (strategy="lazyOnload")

@@ -1,0 +1,304 @@
+name: Capture live site (WordPress -> static routes)
+run-name: 'Capture ${{ inputs.domain }} (mode=${{ inputs.mode }})'
+
+# Captures the live WordPress site into THIS repo as static Next.js routes,
+# using the FFC-Cloudflare-Automation capture/convert scripts, and commits the
+# result to the branch the workflow was dispatched on.
+#
+# Why this lives here rather than only in hub workflow 706: the agent sandbox
+# that drives this migration cannot reach the live host or download an Actions
+# artifact, and 706's convert step requires a `<Header />` anchor in
+# layout.tsx that the Footer-Only template does not render. Running the same
+# scripts here lets the wiring step be completed by hand and the result land
+# directly on the working branch.
+#
+# `probe` makes a handful of read-only requests and prints the CMS inventory
+# (links, slugs, statuses). `capture` runs the full pipeline and pushes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Live apex domain that serves the content (bare hostname).'
+        required: true
+        default: 'makeacalendarinvite.org'
+        type: string
+      mode:
+        description: 'probe = print the REST inventory only. capture = capture, convert, commit, push.'
+        required: true
+        default: 'probe'
+        type: choice
+        options: [probe, capture]
+      contact_email:
+        description: 'Address that replaces message forms (a static site has no form backend).'
+        required: false
+        default: 'contact@makeacalendarinvite.org'
+        type: string
+      ignore_hosts:
+        description: 'Comma-separated hostnames whose references are left alone (not fetched).'
+        required: false
+        default: 'secure.gravatar.com'
+        type: string
+      automation_ref:
+        description: 'Ref of FreeForCharity/FFC-Cloudflare-Automation to take the scripts from.'
+        required: false
+        default: 'main'
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: capture-${{ inputs.domain }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe the CMS inventory
+    if: inputs.mode == 'probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: List pages, posts and permalink shape
+        env:
+          DOMAIN: ${{ inputs.domain }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          base="https://$DOMAIN"
+          echo "== REST root (url/home)"
+          curl -sS -m 30 "$base/?rest_route=/" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d.get(k) for k in ("name","description","url","home")}, indent=2))' || echo "(rest root unreadable)"
+          echo
+          echo "== wp/v2/pages"
+          curl -sS -m 30 "$base/?rest_route=/wp/v2/pages&per_page=100&_fields=id,slug,link,status,title,parent,menu_order" \
+            | python3 -c 'import json,sys; [print(p["id"], p["status"], p["slug"], p["link"], "|", p["title"]["rendered"]) for p in json.load(sys.stdin)]' || echo "(pages unreadable)"
+          echo
+          echo "== wp/v2/posts"
+          curl -sS -m 30 "$base/?rest_route=/wp/v2/posts&per_page=100&_fields=id,slug,link,status,title,date" \
+            | python3 -c 'import json,sys; [print(p["id"], p["status"], p["slug"], p["link"], p["date"], "|", p["title"]["rendered"]) for p in json.load(sys.stdin)]' || echo "(posts unreadable)"
+          echo
+          echo "== homepage: status, canonical, nav hrefs"
+          curl -sS -m 30 -o /tmp/home.html -w 'HTTP %{http_code} final=%{url_effective}\n' -L "$base/"
+          grep -oE '<link rel="canonical" href="[^"]+"' /tmp/home.html | head -3
+          grep -oE 'href="https?://[^"]*'"$DOMAIN"'[^"]*"' /tmp/home.html | sort | uniq -c | sort -rn | head -40
+          echo
+          echo "== headings on the homepage"
+          grep -oE '<h[1-3][^>]*>[^<]{1,120}' /tmp/home.html | sed -E 's/<h([1-3])[^>]*>/h\1: /' | head -40
+          echo
+          echo "== forms on the homepage"
+          grep -oE '<form[^>]*>' /tmp/home.html | head -10
+          echo
+          echo "== each page link: HTTP status"
+          curl -sS -m 30 "$base/?rest_route=/wp/v2/pages&per_page=100&_fields=link" \
+            | python3 -c 'import json,sys; [print(p["link"]) for p in json.load(sys.stdin)]' \
+            | while read -r u; do
+                printf '%s -> ' "$u"
+                curl -sS -m 30 -o /dev/null -w '%{http_code} final=%{url_effective}\n' -L "$u" || echo "(fetch failed)"
+              done
+
+  capture:
+    name: Capture, convert and commit
+    if: inputs.mode == 'capture'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out this repo (the branch the run was dispatched on)
+        uses: actions/checkout@v4
+        with:
+          path: site
+          fetch-depth: 0
+
+      - name: Check out the FFC automation scripts (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: FreeForCharity/FFC-Cloudflare-Automation
+          ref: ${{ inputs.automation_ref }}
+          path: automation
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Offline self-tests of the capture logic
+        working-directory: automation
+        run: |
+          node scripts/capture-wordpress-api.mjs --self-test
+          node scripts/convert-clone-to-routes.mjs --self-test
+
+      - name: Install the image encoder
+        working-directory: automation
+        run: npm install --no-save --no-audit --no-fund sharp@0.34.5
+
+      - name: Capture the live WordPress site
+        working-directory: automation
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          IGNORE_HOSTS: ${{ inputs.ignore_hosts }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/capture/site"
+          args=(--domain "$DOMAIN" --out "$out" --max 800 --delay 250 --include-posts)
+          if [ -n "$IGNORE_HOSTS" ]; then args+=(--ignore-hosts "$IGNORE_HOSTS"); fi
+          rc=0
+          node scripts/capture-wordpress-api.mjs "${args[@]}" || rc=$?
+          report="$out/wp-capture-report.json"
+          if [ ! -f "$report" ]; then
+            echo "::error::capture produced no report (exit $rc)."
+            exit 1
+          fi
+          if [ "$rc" -ge 2 ]; then
+            echo "::error::capture-wordpress-api.mjs exited $rc (usage error or crash)."
+            exit 1
+          fi
+          node scripts/assess-capture-completeness.mjs --report "$report" --min-percent 98
+          echo "== captured HTML files"
+          (cd "$out" && find . -name '*.html' | sort)
+
+      - name: Collapse duplicate assets, heal references, fetch sub-resources
+        working-directory: automation
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/capture/site"
+          node scripts/dedupe-capture-assets.mjs --site "$site"
+          node scripts/heal-missing-asset-refs.mjs --site "$site"
+          node scripts/fetch-asset-subresources.mjs --site "$site" --delay-ms 250
+
+      - name: 'Replace forms with a mailto: block'
+        working-directory: automation
+        env:
+          EMAIL: ${{ inputs.contact_email }}
+          DOMAIN: ${{ inputs.domain }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/capture/site"
+          rc=0
+          matches="$(grep -rlIE '<form[[:space:]/>]' "$site" --include='*.html' --include='*.htm')" || rc=$?
+          if [ "$rc" -gt 1 ]; then
+            echo "::error::Searching for forms failed (grep exit $rc)."
+            exit 1
+          fi
+          if [ -z "$matches" ]; then
+            echo "No forms found; nothing to replace."
+            exit 0
+          fi
+          if [ -z "$EMAIL" ]; then
+            echo "::error::The capture carries forms but contact_email is empty."
+            exit 1
+          fi
+          node scripts/replace-forms-with-mailto.mjs \
+            --dir "$site" --email "$EMAIL" --subject "Website enquiry from $DOMAIN"
+
+      - name: Integrate the capture into the Next.js app
+        env:
+          DOMAIN: ${{ inputs.domain }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node automation/scripts/integrate-clone-into-nextjs.mjs \
+            --clone "$RUNNER_TEMP/capture/site" \
+            --repo site \
+            --domain "$DOMAIN"
+          # DNS-ready means the default Pages URL: no CNAME until cutover.
+          rm -f site/public/CNAME
+          echo "Removed public/CNAME so Pages serves the default URL until cutover."
+
+      - name: Convert the capture into real app routes
+        env:
+          DOMAIN: ${{ inputs.domain }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          rc=0
+          node automation/scripts/convert-clone-to-routes.mjs \
+            --repo site --site-name "$DOMAIN" 2>&1 | tee "$RUNNER_TEMP/convert.log" || rc=${PIPESTATUS[0]}
+          routes="$(find site/src/app -name page.tsx -not -path '*/_disabled_template_routes/*' | wc -l | tr -d ' ')"
+          left="$(find site/public -name '*.html' | wc -l | tr -d ' ')"
+          echo "routes=$routes html_left_in_public=$left convert_rc=$rc"
+          if [ "$routes" -lt 1 ] || [ "$left" -ne 0 ]; then
+            echo "::error::conversion did not produce routes for every captured page."
+            exit 1
+          fi
+          if [ "$rc" -ne 0 ] && ! grep -q 'could not wire' "$RUNNER_TEMP/convert.log"; then
+            echo "::error::conversion failed for a reason other than layout wiring (exit $rc)."
+            exit 1
+          fi
+
+      - name: Wire the generated components into layout.tsx
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'EOF'
+          const fs = require('fs');
+          const p = 'site/src/app/layout.tsx';
+          let s = fs.readFileSync(p, 'utf8');
+          const done = [];
+          if (!/components\/ffc-footer/.test(s)) {
+            const m = /^([ \t]*import\s+Footer\s+from\s+)(['"])([^'"]*components\/)footer\2/m.exec(s);
+            if (!m) throw new Error('no `import Footer from .../footer` to repoint');
+            s = s.replace(m[0], `${m[1]}${m[2]}${m[3]}ffc-footer${m[2]}`);
+            done.push('footer repointed at ffc-footer');
+          }
+          if (!/components\/clone-enhance/.test(s)) {
+            const m = /^([ \t]*import\s+Footer\s+from\s+)(['"])([^'"]*components\/)ffc-footer\2/m.exec(s);
+            if (!m) throw new Error('no ffc-footer import to anchor the clone-enhance import to');
+            s = s.replace(m[0], `${m[0]}\nimport CloneEnhance from ${m[2]}${m[3]}clone-enhance${m[2]}`);
+            done.push('clone-enhance imported');
+          }
+          if (!/<CloneEnhance\s*\/>/.test(s)) {
+            const render = /(\n[ \t]*)\{children\}/;
+            if (!render.test(s)) throw new Error('no `{children}` to render <CloneEnhance /> beside');
+            s = s.replace(render, (_m, indent) => `${indent}<CloneEnhance />${indent}{children}`);
+            done.push('clone-enhance rendered before {children}');
+          }
+          if (!fs.existsSync('site/src/components/clone-enhance/index.tsx')) throw new Error('clone-enhance component missing');
+          if (!fs.existsSync('site/src/components/ffc-footer/index.tsx')) throw new Error('ffc-footer component missing');
+          fs.writeFileSync(p, s);
+          console.log(done.length ? done.join('\n') : 'layout already wired');
+          EOF
+          grep -nE 'clone-enhance|ffc-footer|CloneEnhance' site/src/app/layout.tsx
+
+      - name: Repair references the conversion left pointing at nothing
+        shell: bash
+        run: |
+          set -euo pipefail
+          node automation/scripts/heal-missing-asset-refs.mjs \
+            --site site/public --scan site/public --scan site/src
+
+      - name: Gate - the tree must be publishable (push + Pages limits)
+        run: node automation/scripts/check-publishable-size.mjs site
+
+      - name: Keep the capture report in the repo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/docs/migration
+          cp "$RUNNER_TEMP/capture/site/wp-capture-report.json" site/docs/migration/wp-capture-report.json 2>/dev/null \
+            || cp "$RUNNER_TEMP/capture/site/../wp-capture-report.json" site/docs/migration/wp-capture-report.json
+          cp "$RUNNER_TEMP/convert.log" site/docs/migration/convert.log
+
+      - name: Commit and push to the dispatched branch
+        working-directory: site
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          EMAIL: ${{ inputs.contact_email }}
+          BRANCH: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::notice::The conversion produced no change."
+            exit 0
+          fi
+          # --no-verify: captured minified CSS/JS and binary media must not run
+          # through husky/lint-staged.
+          git commit --no-verify \
+            -m "feat: capture live $DOMAIN as static routes" \
+            -m "Inventory from wp/v2 (pages + posts), markup from the rendered pages, assets localized. Forms replaced with a mailto: block for $EMAIL because a static export has no form backend. Generated by .github/workflows/capture-live-site.yml."
+          git push origin "HEAD:$BRANCH"

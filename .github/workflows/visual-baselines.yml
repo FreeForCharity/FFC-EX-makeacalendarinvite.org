@@ -10,7 +10,9 @@ run-name: 'Visual baselines (${{ github.event_name }} on ${{ github.ref_name }})
 # Runs when .github/visual-baselines.json changes on a branch (bump `refresh`
 # to ask for new baselines after an intentional visual change) or on dispatch.
 # It never runs on its own commit: it commits only PNGs, which are not in the
-# trigger paths.
+# trigger paths. It never runs on main either: main takes changes through pull
+# requests only, so the baselines land on the branch that asked for them and
+# arrive on main with that branch's merge.
 #
 # The commit is pushed with the workflow's own GITHUB_TOKEN, and GitHub does
 # not start push/pull_request workflows for commits made with that token. So
@@ -20,6 +22,8 @@ run-name: 'Visual baselines (${{ github.event_name }} on ${{ github.ref_name }})
 
 on:
   push:
+    branches-ignore:
+      - main
     paths:
       - '.github/visual-baselines.json'
   workflow_dispatch:

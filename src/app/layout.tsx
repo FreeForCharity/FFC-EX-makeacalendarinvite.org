@@ -53,14 +53,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
-        {/* Preload critical LCP image */}
-        <link
-          rel="preload"
-          as="image"
-          href={assetPath('/Images/figma-hero-img.webp')}
-          fetchPriority="high"
-        />
-
         {/*
           Google Consent Mode v2 defaults. MUST come before <GoogleTagManager />
           (and any other Google tag) so the regional defaults are in place

@@ -58,6 +58,9 @@ export const raleway = localFont({
     },
   ],
   display: 'swap',
+  // Used only by specific policy-page headings; loaded on demand rather than
+  // preloaded on every page (the captured content pages never use it).
+  preload: false,
   variable: '--font-raleway',
   fallback: ['Helvetica Neue', 'Arial', 'sans-serif'],
   adjustFontFallback: 'Arial',
@@ -86,6 +89,9 @@ export const cantataOne = localFont({
     },
   ],
   display: 'swap',
+  // Used only by specific policy-page headings; loaded on demand rather than
+  // preloaded on every page (the captured content pages never use it).
+  preload: false,
   variable: '--font-cantata-one',
   fallback: ['Georgia', 'Times New Roman', 'serif'],
   adjustFontFallback: 'Times New Roman',
@@ -96,6 +102,9 @@ export const faunaOne = localFont({
     { path: '../fonts/fauna-one/fauna-one-latin-400-normal.woff2', weight: '400', style: 'normal' },
   ],
   display: 'swap',
+  // Used only by specific policy-page headings; loaded on demand rather than
+  // preloaded on every page (the captured content pages never use it).
+  preload: false,
   variable: '--font-fauna-one',
   fallback: ['Georgia', 'Times New Roman', 'serif'],
   adjustFontFallback: 'Times New Roman',
@@ -110,6 +119,9 @@ export const montserrat = localFont({
     },
   ],
   display: 'swap',
+  // Used only by specific policy-page headings; loaded on demand rather than
+  // preloaded on every page (the captured content pages never use it).
+  preload: false,
   variable: '--font-montserrat',
   fallback: ['Helvetica Neue', 'Arial', 'sans-serif'],
   adjustFontFallback: 'Arial',
@@ -120,6 +132,9 @@ export const cinzel = localFont({
     { path: '../fonts/cinzel/cinzel-latin-wght-normal.woff2', weight: '400 900', style: 'normal' },
   ],
   display: 'swap',
+  // Used only by specific policy-page headings; loaded on demand rather than
+  // preloaded on every page (the captured content pages never use it).
+  preload: false,
   variable: '--font-cinzel',
   fallback: ['Georgia', 'Times New Roman', 'serif'],
   adjustFontFallback: 'Times New Roman',

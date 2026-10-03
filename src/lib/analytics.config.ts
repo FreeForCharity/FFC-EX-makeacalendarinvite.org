@@ -23,4 +23,4 @@
  * The explicit `: string` matters: without it TypeScript narrows the constant
  * to its literal value and rejects the empty-string comparisons the guards use.
  */
-export const GTM_ID: string = ''
+export const GTM_ID: string = 'GTM-M8Q5KN8L'

@@ -73,7 +73,7 @@ jobs:
       - id: r
         env:
           IN_MODE: ${{ inputs.mode }}
-          IN_DOMAIN: ${{ needs.resolve.outputs.domain }}
+          IN_DOMAIN: ${{ inputs.domain }}
           IN_EMAIL: ${{ needs.resolve.outputs.contact_email }}
           IN_IGNORE: ${{ inputs.ignore_hosts }}
           IN_REF: ${{ inputs.automation_ref }}

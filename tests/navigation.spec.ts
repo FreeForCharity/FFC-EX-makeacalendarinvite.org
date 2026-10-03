@@ -29,7 +29,8 @@ test.describe('primary navigation', () => {
         .first()
         .getByRole('link', { name: item.label, exact: true })
         .click()
-      await expect(page).toHaveURL(new RegExp(`${item.path.replace(/\//g, '\\/')}$`))
+      await page.waitForURL((url) => url.pathname.endsWith(item.path))
+      expect(new URL(page.url()).pathname.endsWith(item.path)).toBe(true)
       const expected = sitePages.find((p) => p.path === item.path)!
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(expected.h1)
     }

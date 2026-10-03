@@ -89,7 +89,9 @@ node scripts/migration/postprocess-clone-content.mjs --check
 
 `tests/visual.spec.ts-snapshots/` is generated on the CI runner, never locally (fonts and Chromium
 builds differ). After an intentional visual change, bump `refresh` in `.github/visual-baselines.json`
-on the branch; `.github/workflows/visual-baselines.yml` regenerates and commits the PNGs.
+on the branch; `.github/workflows/visual-baselines.yml` regenerates and commits the PNGs. That
+commit is made with the workflow token, which does not start CI on its own, so re-run the
+"CI - Build and Test" workflow on the PR (or push a follow-up commit) once the baselines land.
 
 ## Deployment and cutover
 

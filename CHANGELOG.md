@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- 2026-10-03: converted from the Footer-Only template stub into the live
+  makeacalendarinvite.org site, captured from the WordPress source (Divi on WPMU DEV): five
+  content pages as static routes, 152 localized assets, Level 1 (pre-501c3) footer, GA4 + GTM
+  provisioned and wired, `next` 16.3.6 (GHSA-vcvr-r3jv-pc5j). Tracking: issue #5.
+- Message forms replaced with a `mailto:` block; the Divi search UI and `url(false)` CSS layers
+  (no backend, 404 on every page) removed by `scripts/migration/postprocess-clone-content.mjs`.
+- Template image hosts removed from `next.config.ts`; the template hero preload removed from the
+  layout.
+
 ### Added
+
+- End-to-end coverage of every page and feature (`tests/site-pages.spec.ts`,
+  `navigation.spec.ts`, `not-found.spec.ts`), axe WCAG 2.1 A/AA on every route
+  (`accessibility.spec.ts`), and full-page visual-regression baselines for all routes on desktop
+  and mobile (`visual.spec.ts`, generated on CI by `.github/workflows/visual-baselines.yml`).
+- `.github/workflows/capture-live-site.yml`: repeatable capture of the live site from a GitHub
+  runner, with the plain-permalink patch for the hub capture script.
 
 - Community health files for better GitHub integration
   - SUPPORT.md for support resources

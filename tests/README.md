@@ -1,116 +1,54 @@
-# E2E Test Configuration Guide
+# End-to-end tests
 
-## Overview
-
-This directory contains end-to-end (E2E) tests that validate the footer-only template functionality using Playwright. The tests cover footer links, cookie consent, copyright notices, social media links, Google Tag Manager, and policy pages.
-
-## Quick Start
-
-### Running Tests
+Playwright specs that run against the static export served locally (`pnpm run preview`, which
+`playwright.config.ts` starts for you) on two projects: Desktop Chrome and a Pixel 5 phone.
 
 ```bash
-# Build the site first
-pnpm run build
-
-# Run tests
-pnpm run test:e2e
-
-# Run tests with UI (interactive)
-pnpm run test:e2e:ui
-
-# Run tests in headed mode (see browser)
-pnpm run test:e2e:headed
+pnpm run build        # the export the tests serve
+pnpm run test:e2e     # every spec, both projects
+pnpm exec playwright test tests/site-pages.spec.ts   # one spec
+pnpm run test:e2e:ui  # interactive
 ```
 
-## Customizing Tests for Your Organization
+## What each spec proves
 
-When you customize this template for a new organization, update `tests/test.config.ts` with your content:
+| Spec                         | Covers                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site-pages.spec.ts`         | Every content page in `site-pages.ts`: 200, exact `<title>`, one h1, every section heading in order, description/canonical/social-card metadata, `main#main-content` + skip link + footer, no request to the host the site was captured from, no failed same-origin asset, no page or console error, no dead CMS chrome; the contact page's mailto block and FAQ; the home page's steps |
+| `navigation.spec.ts`         | Desktop menu lists and reaches every page; the current page is marked; the mobile hamburger opens and closes with `role="button"` / `aria-expanded` and its links navigate                                                                                                                                                                                                              |
+| `accessibility.spec.ts`      | axe-core WCAG 2.1 A/AA on every route. The migration's own chrome passes the full rule set; captured pages exempt `color-contrast` only (tracked in issue #13)                                                                                                                                                                                                                          |
+| `visual.spec.ts`             | Full-page screenshot of every route on both projects against the baselines in `visual.spec.ts-snapshots/`                                                                                                                                                                                                                                                                               |
+| `not-found.spec.ts`          | An unknown path returns 404 with the site's own 404 page and footer                                                                                                                                                                                                                                                                                                                     |
+| `policy-pages.spec.ts`       | The seven policy routes render and the footer links to them                                                                                                                                                                                                                                                                                                                             |
+| `footer-only.spec.ts`        | The attribution footer, a single h1 and the main landmark                                                                                                                                                                                                                                                                                                                               |
+| `cookie-consent.spec.ts`     | Banner, preferences modal, persistence and ARIA                                                                                                                                                                                                                                                                                                                                         |
+| `google-tag-manager.spec.ts` | GTM container and Consent Mode ordering (skips itself while no container id is configured)                                                                                                                                                                                                                                                                                              |
+| `copyright.spec.ts`          | The copyright line and the supporting-organization link                                                                                                                                                                                                                                                                                                                                 |
+| `social-links.spec.ts`       | Exactly the configured social icons (none for this site)                                                                                                                                                                                                                                                                                                                                |
+| `security-metadata.spec.ts`  | CSP meta tag, `_headers`, both `security.txt` copies                                                                                                                                                                                                                                                                                                                                    |
+| `smoke.spec.ts`              | Run by the post-deploy smoke workflow against the LIVE URL (`playwright.smoke.config.ts`), not by `test:e2e`                                                                                                                                                                                                                                                                            |
 
-```typescript
-export const testConfig = {
-  socialLinks: {
-    facebook: { url: 'facebook.com/yourcharity', ariaLabel: 'Facebook' },
-    twitter: { url: 'x.com/yourcharity', ariaLabel: 'X (Twitter)' },
-    linkedin: { url: 'linkedin.com/company/yourcharity', ariaLabel: 'LinkedIn' },
-    github: { url: 'github.com/yourcharity', ariaLabel: 'GitHub' },
-  },
-  copyright: {
-    text: 'All Rights Reserved by Your Charity a 501c3 Non Profit',
-    searchText: 'All Rights Reserved',
-    linkUrl: 'https://yourcharity.org',
-    linkText: 'https://yourcharity.org',
-  },
-  googleTagManager: { id: 'GTM-XXXXXXX' },
-  logo: { headerAlt: 'Your Charity' },
-  cookieConsent: {
-    bannerHeading: 'We Value Your Privacy',
-    modalHeading: 'Cookie Preferences',
-    buttons: {
-      acceptAll: 'Accept All',
-      declineAll: 'Decline All',
-      customize: 'Customize',
-      savePreferences: 'Save Preferences',
-      cancel: 'Cancel',
-    },
-  },
-}
-```
+`site-pages.ts` is the one place the content facts live (paths, titles, h1s, section headings, the
+primary navigation, the policy routes). Re-capturing the live site after a content change is
+expected to update that file in the same commit.
 
-## Configuration Reference
+## Visual baselines
 
-### Social Media Links (`social-links.spec.ts`)
+`visual.spec.ts-snapshots/` is generated on the CI runner image, never on a developer machine:
+font rasterization and Chromium builds differ between hosts, and a baseline made elsewhere fails
+in CI for reasons that are not regressions. To refresh after an intentional visual change, bump
+`refresh` in `.github/visual-baselines.json` on your branch and push; the `Visual regression
+baselines` workflow commits the new PNGs to the branch. That commit is made with the workflow
+token, which does not start CI, so re-run "CI - Build and Test" on the PR or push a follow-up
+commit afterwards.
 
-- `socialLinks.*.url`: Social media profile URLs
-- `socialLinks.*.ariaLabel`: Accessibility labels for screen readers
+`settle()` in the spec makes the capture deterministic: it walks the page, makes every image eager
+and pins it to one `srcset` candidate (a full-page capture resizes the viewport, which would
+otherwise re-select candidates mid-capture), awaits image decode and fonts, waits for the cookie
+banner, freezes animations, and requires the document height to hold still across four samples.
 
-### Copyright Notice (`copyright.spec.ts`)
+## `test.config.ts`
 
-- `copyright.text`: Full copyright text
-- `copyright.searchText`: Text used to locate the copyright element
-- `copyright.linkUrl`: Organization website URL
-- `copyright.linkText`: Displayed link text
-
-### Google Tag Manager (`google-tag-manager.spec.ts`)
-
-- `googleTagManager.id`: Your GTM container ID
-
-### Logo (`footer-only.spec.ts`)
-
-- `logo.headerAlt`: Alt text for header logo
-
-### Cookie Consent (`cookie-consent.spec.ts`)
-
-- `cookieConsent.bannerHeading`: Cookie banner heading
-- `cookieConsent.modalHeading`: Preferences modal heading
-- `cookieConsent.buttons.*`: Button text for all cookie consent buttons
-
-## Test Files
-
-| File                         | What It Tests                               |
-| ---------------------------- | ------------------------------------------- |
-| `footer-only.spec.ts`        | Footer structure, links, and content        |
-| `social-links.spec.ts`       | Social media link validation                |
-| `copyright.spec.ts`          | Copyright notice with current year          |
-| `google-tag-manager.spec.ts` | GTM integration                             |
-| `cookie-consent.spec.ts`     | Cookie consent banner and preferences       |
-| `policy-pages.spec.ts`       | Policy page rendering and footer link hrefs |
-
-## Adding New Tests
-
-1. Create a new test file: `tests/your-feature.spec.ts`
-2. Import the test config: `import { testConfig } from './test.config'`
-3. Add configuration for your feature to `test.config.ts`
-4. Write tests using the configuration values
-
-## Troubleshooting
-
-**Tests fail after customization**: Verify all values in `test.config.ts` match your page content exactly. Text matching is case-sensitive.
-
-**Tests can't find elements**: Run tests with the UI to see what's happening: `pnpm run test:e2e:ui`
-
-**GTM tests fail**: Update `googleTagManager.id` with your actual GTM container ID.
-
-## Further Reading
-
-- [Playwright Documentation](https://playwright.dev/docs/intro)
-- [TESTING.md](../TESTING.md) -- Project testing guide
+Shared expectations the older specs read: social links, the copyright line, the GTM id, the cookie
+consent copy. Everything is derived from `src/lib/site.config.ts` and `src/lib/analytics.config.ts`
+so a rebrand never has to edit the tests.

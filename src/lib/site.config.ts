@@ -164,10 +164,10 @@ export const siteConfig: SiteConfig = {
     'Make A Calendar Invite explains why calendar invites matter, how to make one, and tips for better event attendance.',
   shortDescription:
     'Why calendar invites matter, how to make one, and tips for better event attendance.',
-  // No public/CNAME yet: this deploy is served at the GitHub Pages project
-  // URL, so the origin is github.io and sitePath() adds /<repo>. The cutover
-  // PR that adds public/CNAME switches this to https://makeacalendarinvite.org.
-  url: 'https://freeforcharity.github.io',
+  // public/CNAME names the Pages custom domain, so this deploy is served
+  // there with no base path (deploy.yml reads the same signal). Pre-cutover
+  // that is staging.<domain>; hub workflow 120 flips both to the apex.
+  url: 'https://staging.makeacalendarinvite.org',
   twitterHandle: '',
   contactEmail: 'contact@makeacalendarinvite.org',
   keywords: ['calendar invite', 'meeting invite', 'ics', 'event attendance'],

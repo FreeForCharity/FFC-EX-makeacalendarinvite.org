@@ -106,6 +106,10 @@ Cutover order (hub workflows in FFC-Cloudflare-Automation):
 2. `121` preflight must report READY (origin healthy, artifact apex-ready, CAA, HTTPS).
 3. `120` flips Cloudflare DNS and `public/CNAME` to the apex.
 
+The policy pages print the site origin, so every origin change (staging, then the apex) reflows
+them. The PR that changes `siteConfig.url` must also bump `refresh` in `.github/visual-baselines.json`
+so the visual baselines follow the content.
+
 `post-deploy-smoke.yml` verifies the live deployment after each publish and screenshots it.
 
 ## Contact

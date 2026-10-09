@@ -1,5 +1,5 @@
 name: Staging live check (temporary)
-# Read-only. Runs the live smoke suite against the staging host and reports
+# Read-only. Runs the live smoke suite against the staging host and reports (run 2)
 # the Pages binding and certificate. Removed before this branch is merged.
 on:
   push:

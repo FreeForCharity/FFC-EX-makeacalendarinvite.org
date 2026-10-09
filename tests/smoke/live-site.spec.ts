@@ -79,13 +79,16 @@ for (const route of routes) {
     await context.clearCookies()
 
     const failed: string[] = []
-    let origin = ''
-    const isOurs = (url: string) => origin !== '' && url.startsWith(origin)
     const ignored = (url: string) => IGNORED_HOSTS.some((h) => new URL(url).hostname.endsWith(h))
 
+    // Buffer every 4xx/5xx and filter by origin once navigation has settled.
+    // The origin is only known after page.goto() resolves (it follows
+    // redirects), and the render-blocking stylesheet, next/font files and
+    // early scripts all finish during that navigation, so filtering at event
+    // time would silently drop exactly the failures this spec exists for.
+    const errorResponses: { status: number; url: string }[] = []
     page.on('response', (res) => {
-      const url = res.url()
-      if (res.status() >= 400 && isOurs(url)) failed.push(`${res.status()} ${url}`)
+      if (res.status() >= 400) errorResponses.push({ status: res.status(), url: res.url() })
     })
     page.on('requestfailed', (req) => {
       const url = req.url()
@@ -100,10 +103,14 @@ for (const route of routes) {
     })
 
     const response = await page.goto(relative(route.path), { waitUntil: 'load' })
-    origin = new URL(page.url()).origin
+    const origin = new URL(page.url()).origin
     expect(response?.status(), `${route.path} document status`).toBe(200)
 
     await loadEverything(page)
+
+    for (const { status, url } of errorResponses) {
+      if (url.startsWith(origin)) failed.push(`${status} ${url}`)
+    }
 
     const brokenImages = await page.evaluate(() =>
       Array.from(document.images)

@@ -111,8 +111,12 @@ test.describe('Post-deploy smoke tests', () => {
     await expect(copyrightText).toContainText(`${currentYear}`)
     await expect(copyrightText).toContainText(testConfig.copyright.text)
 
-    // Organization link in copyright
-    const orgLink = footer.getByRole('link', { name: testConfig.copyright.linkText })
+    // Organization link in copyright. Scoped to the copyright line: the
+    // footer also carries the "Supported by" attribution to the same
+    // organization, so a footer-wide role query matches two links.
+    const orgLink = footer
+      .locator(`p:has-text("${testConfig.copyright.searchText}")`)
+      .getByRole('link', { name: testConfig.copyright.linkText })
     await expect(orgLink).toBeVisible()
     await expect(orgLink).toHaveAttribute('href', testConfig.copyright.linkUrl)
   })

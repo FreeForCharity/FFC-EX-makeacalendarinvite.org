@@ -1,0 +1,43 @@
+name: Staging live check (temporary)
+# Read-only. Runs the live smoke suite against the staging host and reports
+# the Pages binding and certificate. Removed before this branch is merged.
+on:
+  push:
+    branches-ignore: [main]
+    paths: ['.github/workflows/zz-staging-check.yml']
+permissions:
+  contents: read
+  pages: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Pages binding and certificate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '{cname, status, html_url, https_enforced, cert: .https_certificate.state, cert_domains: .https_certificate.domains, cert_expires: .https_certificate.expires_at}'
+          echo "--- default URL"
+          curl -sS -o /dev/null -D - --max-time 30 https://freeforcharity.github.io/FFC-EX-makeacalendarinvite.org/ | grep -iE '^(HTTP|location)' || true
+          echo "--- http staging"
+          curl -sS -o /dev/null -D - --max-time 30 http://staging.makeacalendarinvite.org/ | grep -iE '^(HTTP|location)' || true
+          echo "--- https staging"
+          curl -sS -o /dev/null -w 'code=%{http_code} ssl_verify=%{ssl_verify_result}\n' --max-time 30 https://staging.makeacalendarinvite.org/ || true
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Live smoke suite against the staging host
+        env:
+          SMOKE_BASE_URL: https://staging.makeacalendarinvite.org/
+          CI: '1'
+        run: pnpm exec playwright test --config playwright.smoke.config.ts --reporter=list
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: staging-live-screenshots
+          path: artifacts/

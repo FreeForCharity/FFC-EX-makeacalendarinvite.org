@@ -12,12 +12,20 @@ import { defineConfig, devices } from '@playwright/test'
  */
 // Ensure baseURL ends with trailing slash so relative paths in tests resolve correctly.
 // e.g., baseURL "https://host/prefix/" + goto("privacy-policy/") = "https://host/prefix/privacy-policy/"
-const rawBaseURL = process.env.BASE_URL || 'http://localhost:3000'
+// The post-deploy smoke workflow passes the live URL as SMOKE_BASE_URL (and
+// PLAYWRIGHT_BASE_URL); BASE_URL stays for running it by hand.
+const rawBaseURL =
+  process.env.BASE_URL ||
+  process.env.SMOKE_BASE_URL ||
+  process.env.PLAYWRIGHT_BASE_URL ||
+  'http://localhost:3000'
 const baseURL = rawBaseURL.endsWith('/') ? rawBaseURL : `${rawBaseURL}/`
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: ['smoke.spec.ts'],
+  // smoke.spec.ts: template features. smoke/: every route and every asset on
+  // the live host (tests/smoke/live-site.spec.ts).
+  testMatch: ['smoke.spec.ts', 'smoke/**/*.spec.ts'],
 
   // Smoke tests run sequentially — small suite, no need for parallelism
   fullyParallel: false,

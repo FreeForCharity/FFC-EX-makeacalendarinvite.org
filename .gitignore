@@ -47,3 +47,6 @@ next-env.d.ts
 # Decap CMS uploads
 /public/uploads
 *.bak
+
+# Screenshots written by the live smoke suite (tests/smoke/)
+artifacts/

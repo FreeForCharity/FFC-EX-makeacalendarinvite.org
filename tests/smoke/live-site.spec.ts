@@ -128,17 +128,20 @@ for (const route of routes) {
       if (res.status() >= 400) brokenBackgrounds.push(`${res.status()} ${url}`)
     }
 
+    // Screenshot first so a broken page is still captured, then report the
+    // specific asset URLs before the hydration check, whose failure would
+    // otherwise hide them.
+    await saveScreenshot(page, route.name, testInfo)
+
+    expect(failed, 'failed same-origin or network requests').toEqual([])
+    expect(brokenImages, 'images that loaded no pixels').toEqual([])
+    expect(brokenBackgrounds, 'CSS background images that do not resolve').toEqual([])
+
     // The banner is client-rendered, so seeing it proves the scripts loaded
     // and React hydrated on this host.
     await expect(
       page.locator('[role="region"][aria-label="Cookie consent notice"]'),
       'page hydrated (cookie banner rendered)'
     ).toBeVisible({ timeout: 15000 })
-
-    await saveScreenshot(page, route.name, testInfo)
-
-    expect(failed, 'failed same-origin or network requests').toEqual([])
-    expect(brokenImages, 'images that loaded no pixels').toEqual([])
-    expect(brokenBackgrounds, 'CSS background images that do not resolve').toEqual([])
   })
 }

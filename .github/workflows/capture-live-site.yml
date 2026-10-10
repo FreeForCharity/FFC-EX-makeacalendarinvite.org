@@ -69,7 +69,7 @@ jobs:
       ignore_hosts: ${{ steps.r.outputs.ignore_hosts }}
       automation_ref: ${{ steps.r.outputs.automation_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: r
         env:
           IN_MODE: ${{ inputs.mode }}
@@ -147,13 +147,13 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Check out this repo (the branch the run was dispatched on)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: site
           fetch-depth: 0
 
       - name: Check out the FFC automation scripts (read-only)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: FreeForCharity/FFC-Cloudflare-Automation
           ref: ${{ needs.resolve.outputs.automation_ref }}
